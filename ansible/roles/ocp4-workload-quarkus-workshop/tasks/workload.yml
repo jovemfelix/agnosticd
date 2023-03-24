@@ -3,80 +3,79 @@
 # Implement your Workload deployment tasks here
 
 # Access for admin
-- name: Give access to opentlc-mgr
-  shell: |
-         oc adm policy add-cluster-role-to-user cluster-admin opentlc-mgr
-
-- name: create module list
-  set_fact:
-    modules: "{{ module_type.split(';') | map('trim') | list }}"
+# - name: Give access to opentlc-mgr
+#   shell: |
+#          oc adm policy add-cluster-role-to-user cluster-admin {{ ocp_username }}
 
 - name: Selected Modules
   debug:
     msg: "selected modules list: {{ modules }}"
 
-- name: Create CatalogSource Index 4.10
-  k8s:
-    state: present
-    merge_type:
-    - strategic-merge
-    - merge
-    definition: "{{ lookup('file', item ) | from_yaml }}"
-  loop:
-  - redhat-operators-index.yaml
-  - community-operators-index.yaml
+# usar Catalogo existente
+#- name: Create CatalogSource Index 4.10
+#  k8s:
+#    state: present
+#    merge_type:
+#    - strategic-merge
+#    - merge
+#    definition: "{{ lookup('file', item ) | from_yaml }}"
+#  loop:
+#  - redhat-operators-index.yaml
+#  - community-operators-index.yaml
 
 # Create projects for user
 - name: create projects for users
   include_tasks: create_project.yaml
   vars:
-    t_project_name: "{{ t_user }}-project"
+    t_project_name: "{{ t_user }}{{ workshop_project_sufix }}"
   loop: "{{ users }}"
   loop_control:
     loop_var: t_user
 
 - name: create guides project
-  when: num_users | int > 0
   k8s:
     state: present
     kind: Project
     api_version: project.openshift.io/v1
     definition:
       metadata:
-        name: "guides"
+        name: "{{ workshop_openshift_namespace_guide }}"
         annotations:
           openshift.io/description: ""
           openshift.io/display-name: "Quarkus Workshop Guides"
+        labels:
+          workshop: "{{ workshop_openshift_namespace_label }}"
+  when: num_users | int > 0
 
 - name: install guides
-  when: num_users | int > 0
-  include_tasks: install-guides.yaml
-  vars:
-    guide: "{{ item }}"
+  ansible.builtin.include_tasks: 'install-guides.yaml'
   loop: "{{ modules }}"
+  loop_control:
+    loop_var: guide  
+  when: num_users | int > 0
 
 - name: install username distribution
-  when: num_users | int > 0
   include_tasks: install-username-distribution.yaml
+  when: num_users | int > 0
 
 - name: search for rhsso
-  k8s_info:
+  kubernetes.core.k8s_info:
     kind: DeploymentConfig
     name: rhsso
-    namespace: rhsso
+    namespace: '{{ workshop_openshift_namespace_rhsso }}'
   register: r_rhsso_dc
 
 - name: install rhsso
-  when: r_rhsso_dc.resources | list | length == 0
   include_tasks: install-rhsso.yaml
+  when: r_rhsso_dc.resources | list | length == 0
 
 # Install CRW via operator
 - name: see if codeready is installed
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: org.eclipse.che/v1
     kind: CheCluster
     name: codeready-workspaces
-    namespace: codeready
+    namespace: "{{ workshop_openshift_namespace_codeready }}"
   register: r_codeready_cr
 
 - name: show codeready cr
@@ -84,12 +83,12 @@
     msg: "existing codeready project: {{ r_codeready_cr }}"
 
 - name: install codeready
-  when: r_codeready_cr.resources | list | length == 0
   include_tasks: install-codeready.yaml
+  when: r_codeready_cr.resources | list | length == 0
 
-  # Install  AMQ Streams for all workspaces
+ # Install  AMQ Streams for all workspaces
 - name: Look for amq subscription
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: Subscription
     name: amq-streams
@@ -101,12 +100,12 @@
     msg: "existing amq sub: {{ r_amq_sub }}"
 
 - name: Create OpenShift Objects for Kafka (amq streams)
-  when: r_amq_sub.resources | list | length == 0
   include_tasks: install-amqstreams.yaml
+  when: r_amq_sub.resources | list | length == 0
 
-  # Install  Jaeger for all workspaces
+ # Install  Jaeger for all workspaces
 - name: Look for jaeger subscription
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: Subscription
     name: jaeger-product
@@ -118,8 +117,8 @@
     msg: "existing jaeger sub: {{ r_jaeger_sub }}"
 
 - name: Create OpenShift Objects for Jaeger
-  when: r_jaeger_sub.resources | list | length == 0
   include_tasks: install-jaeger.yaml
+  when: r_jaeger_sub.resources | list | length == 0
 
 # Leave this as the last task in the playbook.
 - name: workload tasks complete

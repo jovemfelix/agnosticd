@@ -9,15 +9,15 @@
 - name: remove the user Projects
   k8s:
     state: absent
-    name: "{{ item }}-project"
+    name: "{{ item }}{{ workshop_project_sufix }}"
     kind: Project
     api_version: project.openshift.io/v1
   with_list: "{{ users }}"
 
-- name: remove the guides
+- name: remove the guides project
   k8s:
     state: absent
-    name: "guides"
+    name: "{{ workshop_openshift_namespace_guide }}"
     kind: Project
     api_version: project.openshift.io/v1
 

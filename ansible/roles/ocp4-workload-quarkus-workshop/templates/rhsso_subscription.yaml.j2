@@ -3,10 +3,10 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: rhsso-operator
-  namespace: rhsso
+  namespace: "{{ workshop_openshift_namespace_rhsso }}"
 spec:
-  channel: alpha
+  channel: stable
   installPlanApproval: Automatic
   name: rhsso-operator
-  source: redhat-operators-index
+  source: "{{ workshop_openshift_source_rhsso }}"
   sourceNamespace: openshift-marketplace

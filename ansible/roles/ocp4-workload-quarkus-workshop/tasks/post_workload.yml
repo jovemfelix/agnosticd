@@ -9,7 +9,7 @@
     msg: |
       Username: {{ item }}
       {% for m in modules %}
-      Workshop User Guide: http://web-{{ m }}-guides.{{ route_subdomain }}
+      Workshop User Guide: http://web-{{ m }}-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}
       {% endfor %}
   loop: "{{ users }}"
 
@@ -20,13 +20,13 @@
       
       URL for attendees to get a username assigned to them and links to labs:
       
-      https://get-a-username-guides.{{ route_subdomain }}
+      https://get-a-username-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}
       
       You should share this URL (or a shortlink for it) -- It is all they will need to get started!
       
       [Instructor Only] To access the admin see which user is assigned to which user ID, use the following:
       
-      [Instructor Only] https://get-a-username-guides.{{ route_subdomain }}/admin
+      [Instructor Only] https://get-a-username-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}/admin
       
       [Instructor Only] Admin login with 'admin' / '{{ workshop_openshift_user_password }}'
     
@@ -36,22 +36,22 @@
       Individual module guide URLs (in case you need them for direct linking):
 
 - name: output workshop info guides
+  agnosticd_user_info:
+    msg: |
+      Module 1 http://web-m1-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}
   when: ("m1" in modules)
-  agnosticd_user_info:
-    msg: |
-      Module 1 http://web-m1-guides.{{ route_subdomain }}
 
 - name: output workshop info guides
+  agnosticd_user_info:
+    msg: |
+      Module 2 http://web-m2-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}
   when: ("m2" in modules)
-  agnosticd_user_info:
-    msg: |
-      Module 2 http://web-m2-guides.{{ route_subdomain }}
 
 - name: output workshop info guides
-  when: ("m3" in modules)
   agnosticd_user_info:
     msg: |
-      Module 3 http://web-m3-guides.{{ route_subdomain }}
+      Module 3 http://web-m3-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}
+  when: ("m3" in modules)
 
 - name: output workshop info guides
   agnosticd_user_info:
@@ -61,10 +61,10 @@
       
       OpenShift/Kubernetes API (use with oc login): {{ master_url }}
       
-      CodeReady Console: https://codeready-codeready.{{ route_subdomain }}
+      CodeReady Console: https://codeready-{{ workshop_openshift_namespace_codeready }}.{{ route_subdomain }}
       Admin login with 'admin' / 'admin'
       
-      Red Hat SSO Console: https://secure-rhsso-rhsso.{{ route_subdomain }}
+      Red Hat SSO Console: https://secure-rhsso-{{ workshop_openshift_namespace_rhsso }}.{{ route_subdomain }}
       Admin login with '{{workshop_rhsso_admin_user_name}}' / '{{workshop_rhsso_admin_password}}'
       
       NOTE: Workspaces in CodeReady are provisioned asynchronously and may not be accessible until rollout finishes shortly.

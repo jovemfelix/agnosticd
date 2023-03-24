@@ -5,7 +5,7 @@ metadata:
   labels:
     app: sso
   name: rhsso
-  namespace: rhsso
+  namespace: "{{ workshop_openshift_namespace_rhsso }}"
 spec:
   externalAccess:
     enabled: true

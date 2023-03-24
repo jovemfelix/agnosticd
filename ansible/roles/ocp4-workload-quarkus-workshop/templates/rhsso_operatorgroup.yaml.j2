@@ -7,7 +7,7 @@ metadata:
     olm.providedAPIs: >-
       Keycloak.v1alpha1.keycloak.org,KeycloakBackup.v1alpha1.keycloak.org,KeycloakClient.v1alpha1.keycloak.org,KeycloakRealm.v1alpha1.keycloak.org,KeycloakUser.v1alpha1.keycloak.org
   name: rhsso-operator-group
-  namespace: rhsso
+  namespace: "{{ workshop_openshift_namespace_rhsso }}"
 spec:
   targetNamespaces:
-    - rhsso
+    - "{{ workshop_openshift_namespace_rhsso }}"

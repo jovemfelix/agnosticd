@@ -10,6 +10,8 @@
         annotations:
           openshift.io/description: ""
           openshift.io/display-name: "Quarkus Workshop project for {{ t_user }}"
+        labels:
+          workshop: "{{ workshop_openshift_namespace_label }}"
 
 - name: assign permissions for user {{ t_user }}
   k8s:

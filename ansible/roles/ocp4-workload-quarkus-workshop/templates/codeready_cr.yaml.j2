@@ -3,7 +3,7 @@ apiVersion: org.eclipse.che/v1
 kind: CheCluster
 metadata:
   name: codeready-workspaces
-  namespace: codeready
+  namespace: "{{ workshop_openshift_namespace_codeready }}"
 spec:
   auth:
     identityProviderURL: ''
@@ -39,7 +39,7 @@ spec:
     serverTrustStoreConfigMapName: ''
     proxyUser: ''
     cheWorkspaceClusterRole: ''
-    workspaceNamespaceDefault: <username>-codeready
+    workspaceNamespaceDefault: <username>-{{ workshop_openshift_namespace_codeready }}
     serverExposureStrategy: ''
     gitSelfSignedCert: false
     useInternalClusterSVCNames: true

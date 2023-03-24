@@ -1,9 +1,9 @@
 ---
 - name: verify user projects exist
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: v1
     kind: Namespace
-    name: "{{ item }}-project"
+    name: "{{ item }}{{ workshop_project_sufix }}"
     field_selectors:
       - status.phase=Active
   register: r_user_namespace
@@ -11,11 +11,10 @@
   loop: "{{ users }}"
 
 - name: verify guides pod is running
-  when: num_users | int > 0
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: v1
     kind: Pod
-    namespace: guides
+    namespace: '{{ workshop_openshift_namespace_guide }}'
     label_selectors:
       - deploymentconfig=web-{{ item }}
     field_selectors:
@@ -25,20 +24,21 @@
   delay: 10
   until: r_guides_pod.resources | list | length == 1
   loop: "{{ modules }}"
+  when: num_users | int > 0
 
 - name: verify guides are accessible
-  when: num_users | int > 0
   uri:
-    url: http://web-{{ item }}-guides.{{ route_subdomain }}
+    url: http://web-{{ item }}-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}
     method: GET
     status_code: 200
   loop: "{{ modules }}"
+  when: num_users | int > 0
 
 - name: verify codeready pod is running
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: v1
     kind: Pod
-    namespace: codeready
+    namespace: "{{ workshop_openshift_namespace_codeready }}"
     label_selectors:
       - app=codeready
       - component=codeready
@@ -51,15 +51,16 @@
 
 - name: verify codeready is accessible
   uri:
-    url: https://codeready-codeready.{{ route_subdomain }}/dashboard/
+    url: https://codeready-{{ workshop_openshift_namespace_codeready }}.{{ route_subdomain }}/dashboard/
+    validate_certs: false
     method: GET
     status_code: 200
 
 - name: verify keycloak pod is running
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: v1
     kind: Pod
-    namespace: rhsso
+    namespace: '{{ workshop_openshift_namespace_rhsso }}'
     label_selectors:
       - app = keycloak
       - component = keycloak
@@ -72,13 +73,14 @@
 
 - name: verify keycloak is accessible
   uri:
-    url: https://keycloak-rhsso.{{ route_subdomain }}
+    url: https://keycloak-{{ workshop_openshift_namespace_rhsso }}.{{ route_subdomain }}
+    validate_certs: false
     method: GET
     status_code: 200
 
 - name: Get SSO admin token
   uri:
-    url: https://keycloak-rhsso.{{ route_subdomain }}/auth/realms/master/protocol/openid-connect/token
+    url: https://keycloak-{{ workshop_openshift_namespace_rhsso }}.{{ route_subdomain }}/auth/realms/master/protocol/openid-connect/token
     validate_certs: false
     method: POST
     body:
@@ -92,7 +94,8 @@
 
 - name: Verify custom realm exists
   uri:
-    url: https://keycloak-rhsso.{{ route_subdomain }}/auth/admin/realms/quarkus
+    url: https://keycloak-{{ workshop_openshift_namespace_rhsso }}.{{ route_subdomain }}/auth/admin/realms/quarkus
+    validate_certs: false
     method: GET
     headers:
       Accept: application/json
@@ -100,7 +103,7 @@
     status_code: 200
 
 - name: Verify Kafka CRD
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: apiextensions.k8s.io/v1
     kind: CustomResourceDefinition
     name: kafkas.kafka.strimzi.io
@@ -110,7 +113,7 @@
   until: r_kafka_crd.resources | list | length == 1
 
 - name: verify Kafka operator pod is running
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: v1
     kind: Pod
     namespace: openshift-operators
@@ -124,7 +127,7 @@
   until: r_amq_operator_pod.resources | list | length == 1
 
 - name: Verify Jaeger CRD
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: apiextensions.k8s.io/v1
     kind: CustomResourceDefinition
     name: jaegers.jaegertracing.io
@@ -134,7 +137,7 @@
   until: r_jaeger_crd.resources | list | length == 1
 
 - name: verify Jaeger operator pod is running
-  k8s_info:
+  kubernetes.core.k8s_info:
     api_version: v1
     kind: Pod
     namespace: openshift-operators
@@ -150,6 +153,12 @@
   vars:
     user: "{{ item }}"
   with_list: "{{ users }}"
+
+- name: verify get-a-username are accessible
+  uri:
+    url: http://get-a-username-{{ workshop_openshift_namespace_guide }}.{{ route_subdomain }}
+    method: GET
+    status_code: 200
 
 # Leave this as the last task in the playbook.
 - name: workload verification tasks complete

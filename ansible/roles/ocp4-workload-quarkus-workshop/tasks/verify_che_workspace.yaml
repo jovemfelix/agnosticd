@@ -1,7 +1,7 @@
 ---
 - name: "Get Che {{ user }} token"
   uri:
-    url: https://keycloak-codeready.{{ route_subdomain }}/auth/realms/codeready/protocol/openid-connect/token
+    url: https://keycloak-{{ workshop_openshift_namespace_codeready }}.{{ route_subdomain }}/auth/realms/codeready/protocol/openid-connect/token
     validate_certs: false
     method: POST
     body:
@@ -15,7 +15,7 @@
 
 - name: Get workspace for {{ user }}
   uri:
-    url: "https://codeready-codeready.{{ route_subdomain }}/api/workspace"
+    url: "https://codeready-{{ workshop_openshift_namespace_codeready }}.{{ route_subdomain }}/api/workspace"
     validate_certs: false
     method: GET
     headers:
@@ -25,14 +25,14 @@
   register: workspace_def
 
 - name: Verify and start workspace for {{ user }} again if stopped
-  when: workspace_def.json[0].status == "STOPPED"
   uri:
-    url: "https://codeready-codeready.{{ route_subdomain }}/api/workspace/{{ workspace_def.json[0].id }}/runtime"
+    url: "https://codeready-{{ workshop_openshift_namespace_codeready }}.{{ route_subdomain }}/api/workspace/{{ workspace_def.json[0].id }}/runtime"
     validate_certs: false
     method: POST
     headers:
       Accept: application/json
       Authorization: "Bearer {{ user_token.json.access_token }}"
     status_code: 200
+  when: workspace_def.json[0].status == "STOPPED"
 
 

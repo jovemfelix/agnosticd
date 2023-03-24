@@ -3,7 +3,7 @@ become_override: False
 ocp_username: opentlc-mgr
 silent: False
 
-num_users: 5
+num_users: 2
 workshop_openshift_user_name: userXX
 workshop_openshift_user_password: 'openshift'
 workshop_che_user_name: userXX
@@ -12,7 +12,23 @@ workshop_openshift_admin_password: 'r3dh4t1!'
 workshop_rhsso_admin_user_name: admin
 workshop_rhsso_admin_password: 'r3dh4t1!'
 
-module_type: m1
+workshop_git_quarkus_url: 'https://raw.githubusercontent.com/RedHat-Middleware-Workshops/quarkus-workshop'
+workshop_project_sufix: '-rfelix'
+
+workshop_openshift_namespace_guide: "guides-rfelix"
+workshop_openshift_namespace_rhsso: "rhsso-rfelix"
+workshop_openshift_namespace_codeready: "codeready-rfelix"
+
+workshop_openshift_namespace_label: "quarkus"
+
+workshop_openshift_source_amqstreams: "redhat-operators"
+workshop_openshift_source_rhsso: "redhat-operators"
+workshop_openshift_source_codeready: "redhat-operators"
+
+workshop_redis_host: redis
+workshop_redis_password: redis
+
+module_type: m1;m2;m3
 
 #
 # All modules. Do NOT use a comma (,) in the titles or paths!
