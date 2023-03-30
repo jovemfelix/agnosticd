@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: ocp4-workload-rhsso-conceitos-pratica
+  author: 
+    - Application Practice Team Brazil, Renato Alves Felix (rfelix@redhat.com)
+  description: |
+    Create RHSSO workshop with Foundations, OpenShift 4.
+    This catalog entry is developed and maintained by the Application Practice Team Brazil.
+  license: MIT
+  min_ansible_version: 2.9
+  platforms: []
+  galaxy_tags:
+  - rhsso
+  - workshop
+  - ocp
+  - openshift
+dependencies: []

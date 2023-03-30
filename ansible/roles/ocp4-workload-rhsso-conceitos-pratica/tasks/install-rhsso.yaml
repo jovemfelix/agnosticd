@@ -1,0 +1,91 @@
+---
+- name: "{{ t_user }}: search for rhsso"
+  kubernetes.core.k8s_info:
+    kind: DeploymentConfig
+    name: rhsso
+    namespace: '{{ t_project_name }}'
+  register: r_rhsso_dc
+
+# deploy rhsso operator
+- name: "{{ t_user }}: create operator subscription for RH-SSO"
+  kubernetes.core.k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/rhsso_operatorgroup.yaml.j2
+  - ./templates/rhsso_subscription.yaml.j2
+  when: r_rhsso_dc.resources | list | length == 0
+
+# wait for RHSSO CRD
+- name: "{{ t_user }}: wait for RHSSO CRD"
+  kubernetes.core.k8s_info:
+    api_version: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    name: keycloaks.keycloak.org
+  register: r_rhsso_crd
+  retries: 200
+  delay: 10
+  until: r_rhsso_crd.resources | list | length == 1
+  when: r_rhsso_dc.resources | list | length == 0
+
+- name: "{{ t_user }}: create a secret for RHSSO CR"
+  kubernetes.core.k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/rhsso-credential.yaml.j2
+  when: r_rhsso_dc.resources | list | length == 0
+
+# deploy rhsso CR
+- name: "{{ t_user }}: create CR for RHSSO"
+  kubernetes.core.k8s:
+    state: present
+    merge_type:
+    - strategic-merge
+    - merge
+    definition: "{{ lookup('template', item ) | from_yaml }}"
+  loop:
+  - ./templates/rhsso_cr.yaml.j2
+  when: r_rhsso_dc.resources | list | length == 0
+
+- name: "{{ t_user }}: get SSO admin token"
+  uri:
+    url: https://keycloak-{{ t_project_name }}.{{ route_subdomain }}/auth/realms/master/protocol/openid-connect/token
+    validate_certs: false
+    method: POST
+    body:
+      username: "{{ workshop_rhsso_admin_user_name }}"
+      password: "{{ workshop_rhsso_admin_password }}"
+      grant_type: "password"
+      client_id: "admin-cli"
+    body_format: form-urlencoded
+    status_code: 200,201,204
+  register: rhsso_admin_token
+  retries: 120
+  delay: 10
+  until: rhsso_admin_token.status in [200, 201, 204]
+  when: r_rhsso_dc.resources | list | length == 0
+
+- name: "{{ t_user }}: import realm"
+  uri:
+    url: https://keycloak-{{ t_project_name }}.{{ route_subdomain }}/auth/admin/realms
+    validate_certs: false
+    method: POST
+    body_format: json
+    headers:
+      Content-Type: application/json
+      Authorization: "Bearer {{ rhsso_admin_token.json.access_token }}"
+    body: "{{ lookup('file', './files/quarkus-realm.json') }}"
+    ## accept 409 Conflict in case realm exists
+    status_code: 200,201,204,409
+  register: result
+  retries: 120
+  delay: 10
+  until: result is succeeded
+  when: r_rhsso_dc.resources | list | length == 0

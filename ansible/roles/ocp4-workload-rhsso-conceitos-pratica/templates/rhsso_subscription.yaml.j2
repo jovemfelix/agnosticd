@@ -1,0 +1,12 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: "rhsso-operator"
+  namespace: "{{ t_project_name }}"
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: rhsso-operator
+  source: "{{ workshop_openshift_source_rhsso }}"
+  sourceNamespace: openshift-marketplace

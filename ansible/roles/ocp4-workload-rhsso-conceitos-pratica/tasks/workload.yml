@@ -1,0 +1,55 @@
+# vim: set ft=ansible
+---
+# Implement your Workload deployment tasks here
+
+- name: Selected Modules
+  debug:
+    msg: "selected modules list: {{ modules }}"
+    verbosity: 2
+
+- name: create a project for each user with permission
+  include_tasks: create_project.yaml
+  vars:
+    t_project_name: "{{ t_user }}{{ workshop_project_sufix }}"
+  loop: "{{ users }}"
+  loop_control:
+    loop_var: t_user
+
+- name: install the rhsso for each user
+  include_tasks: install-rhsso.yaml
+  vars:
+    t_project_name: "{{ t_user }}{{ workshop_project_sufix }}"
+  loop: "{{ users }}"
+  loop_control:
+    loop_var: t_user
+
+- name: create guides project
+  kubernetes.core.k8s:
+    state: present
+    kind: Namespace
+    name: "{{ workshop_openshift_namespace_guide }}"
+    definition:
+      metadata:
+        annotations:
+          openshift.io/description: "{{ workshop_openshift_namespace_description }}"
+          openshift.io/display-name: "{{ workshop_openshift_namespace_display_name }}"
+        labels:
+          workshop: "{{ workshop_openshift_namespace_label }}"
+  when: num_users | int > 0
+
+- name: install guides
+  ansible.builtin.include_tasks: 'install-guides.yaml'
+  loop: "{{ modules }}"
+  loop_control:
+    loop_var: guide
+  when: num_users | int > 0
+
+- name: install username distribution
+  include_tasks: install-username-distribution.yaml
+  when: num_users | int > 0
+
+# Leave this as the last task in the playbook.
+- name: workload tasks complete
+  debug:
+    msg: "Workload Tasks completed successfully."
+  when: not silent|bool

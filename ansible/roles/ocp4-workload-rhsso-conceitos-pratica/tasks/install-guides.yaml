@@ -1,0 +1,46 @@
+---
+- name: search for guide {{ guide }}
+  kubernetes.core.k8s_info:
+    kind: DeploymentConfig
+    name: web-{{ guide }}
+    namespace: '{{ workshop_openshift_namespace_guide }}'
+  register: r_guide_dc
+
+- name: set url prefix
+  ansible.builtin.set_fact:
+    prefix_url: "{{ guide }}"
+
+- name: deploy guide {{ guide }}
+  shell: >
+    oc -n "{{ workshop_openshift_namespace_guide }}" new-app --as-deployment-config quay.io/openshiftlabs/workshopper:1.0 --name=web-{{ guide }}
+    -e OPENSHIFT_USER_PASSWORD='{{ workshop_openshift_user_password }}'
+    -e MASTER_URL={{ master_url }}
+    -e CONSOLE_URL={{ console_url }}
+    -e KEYCLOAK_PRE_URL={{ workshop_project_sufix }}.{{ route_subdomain }}
+    -e ROUTE_SUBDOMAIN={{ route_subdomain }}
+    -e CONTENT_URL_PREFIX='{{ workshop_git_content_url }}-{{ prefix_url }}/{{ workshop_git_content_branch }}/docs/'
+    -e WORKSHOPS_URLS="{{ workshop_git_content_url }}-{{ prefix_url }}/{{ workshop_git_content_branch }}/docs/_workshop_{{ guide }}.yml"
+    -e LOG_TO_STDOUT=true
+  when: r_guide_dc.resources | list | length == 0
+
+- name: create the Route for {{ guide }}
+  kubernetes.core.k8s:
+    api_version: route.openshift.io/v1
+    namespace: '{{ workshop_openshift_namespace_guide }}'
+    state: present
+    kind: Route
+    definition:
+      metadata:
+        name: web-{{ guide }}
+        labels:
+          app: web-{{ guide }}
+      spec:
+        host: ''
+        to:
+          kind: Service
+          name: web-{{ guide }}
+          weight: 100
+        port:
+          targetPort: 8080-tcp
+  register: Route
+  when: r_guide_dc.resources | list | length == 0
